@@ -54,8 +54,11 @@ public:
 private:
   int psock;
 
-  /// A scratch buf of the charater ready for reading (or -1 if none)
-  int ready = -1;
+  /// Wii: bytes already taken from the socket. One recv() drains what IOS
+  /// holds, so data that arrived before a reset (a client that sends and
+  /// closes at once) is still read; IOS drops unread data on a reset.
+  uint8_t rxbuf[256];
+  int rxpos = 0, rxlen = 0;
 
   int errorCode = -1;
 };

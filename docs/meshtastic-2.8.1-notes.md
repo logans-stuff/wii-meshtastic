@@ -426,6 +426,29 @@ and the Wiimote IR pointer is the touchscreen.
   blocks and the single-threaded node freezes. The shim translates the flag
   both ways. libogc has no `getpeername` (stubbed; it is only logged), and
   `getsockname` must go through `net_getsockname` with the shim's fd offset.
+- **A TCP client on the Wii needs three things IOS sockets don't give for
+  free** (all in `overlay/lib/WiFi/src/WiFiClient.cpp`). Without them, a
+  `--ch-add` or `--ch-set` from the CLI was lost and NodeDB dumps came out
+  corrupt or reset:
+  - *Blocking socket, every call gated by a zero-timeout `net_poll`.* A
+    non-blocking IOS send can queue part of a buffer and still report
+    `EAGAIN`, so the firmware resent bytes the client already had
+    (duplicated frame starts). With a blocking socket the count is exact.
+    Sends happen only when `POLLOUT` is set (otherwise "0 bytes": the
+    StreamFrameWriter keeps the tail); recv only when `POLLIN`, `POLLHUP` or
+    `POLLERR` is set. IOS poll uses BSD values (`POLLIN` 0x3, `POLLOUT` 0x8).
+  - *A full send buffer is not a dead link.* The upstream library turned
+    any send error into "disconnected", and returned `(size_t)-1`, which the
+    frame writer adds to its offset.
+  - *Read in chunks, and stay connected while unread data remains*
+    (Arduino semantics). The CLI sends its admin message and closes at once
+    with unread data pending, so Linux sends a RST, and IOS drops whatever
+    the app hasn't read yet. Reading one byte per IOS call lost the
+    `set_channel` every time; one 256-byte recv takes it all before the RST.
+    EOF now really counts as disconnected (upstream cleared it).
+- **Each API client's config download stalls the main loop ~2 s** (seen by
+  the watchdog in every build): the whole NodeDB/config dump goes out
+  inside one `loop()`. Not fixed yet.
 - **Wi-Fi in one place**: `wii_net.cpp` brings the network up once, for the
   API and the debug log, and `wii_debuglog_stop()` (called on every exit)
   shuts it down so HBC can reconnect.

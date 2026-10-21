@@ -51,3 +51,15 @@ static inline int wii_getpeername(int, struct sockaddr *, socklen_t *)
     return -1;
 }
 static inline int wii_getsockname(int s, struct sockaddr *a, socklen_t *l) { return wii_ret(net_getsockname(s - 1, a, l)); }
+
+// Zero-timeout poll of one socket; returns IOS revents (BSD values, as in
+// libogc's net_select), 0 if nothing is ready or on error.
+#define WII_POLLIN 0x0003  // POLLRDNORM | POLLRDBAND
+#define WII_POLLOUT 0x0008 // POLLWRNORM
+#define WII_POLLERR 0x0040
+#define WII_POLLHUP 0x0080
+static inline unsigned wii_poll(int s, unsigned events)
+{
+    struct pollsd sd = {s - 1, events, 0};
+    return net_poll(&sd, 1, 0) > 0 ? sd.revents : 0;
+}
