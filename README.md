@@ -1,4 +1,22 @@
-# Meshtastic on the Nintendo Wii
+<p align="center">
+  <img src="docs/logo.png" alt="Meshtastic 2.8.1 + MUI" width="384">
+</p>
+
+<h1 align="center">Meshtastic on the Nintendo Wii</h1>
+
+<p align="center">
+  <img alt="C++" src="https://img.shields.io/badge/C%2B%2B-17-00599C?logo=cplusplus&logoColor=white">
+  <img alt="C" src="https://img.shields.io/badge/C-libogc-A8B9CC?logo=c&logoColor=white">
+  <img alt="Python" src="https://img.shields.io/badge/Python-tools-3776AB?logo=python&logoColor=white">
+  <img alt="Shell" src="https://img.shields.io/badge/Shell-build-4EAA25?logo=gnubash&logoColor=white">
+  <img alt="Nintendo Wii" src="https://img.shields.io/badge/platform-Nintendo%20Wii-8B8B8B">
+  <img alt="Meshtastic firmware 2.8.1" src="https://img.shields.io/badge/Meshtastic-2.8.1-67EA94?logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMCAyMiI%2BPGcgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMWIxZjIzIiBzdHJva2Utd2lkdGg9IjQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxwYXRoIGQ9Ik0yIDIxTDEyIDEiLz48cGF0aCBkPSJNMTAgMjFMMjAgMUwzMCAyMSIvPjwvZz48L3N2Zz4%3D">
+  <img alt="MeshtasticUI on LVGL 9.3" src="https://img.shields.io/badge/MUI-LVGL%209.3-343839">
+  <img alt="devkitPPC" src="https://img.shields.io/badge/toolchain-devkitPPC-2E5C9A">
+  <img alt="PlatformIO" src="https://img.shields.io/badge/PlatformIO-6.1-F5822A?logo=platformio&logoColor=white">
+  <img alt="Docker" src="https://img.shields.io/badge/build-Docker-2496ED?logo=docker&logoColor=white">
+  <img alt="License: GPL-3.0" src="https://img.shields.io/badge/license-GPL--3.0-blue">
+</p>
 
 The real [Meshtastic firmware](https://github.com/meshtastic/firmware) (pinned in
 `build.sh`, currently **v2.8.1**) running natively on a Nintendo Wii, with
@@ -92,7 +110,7 @@ segments, because the Wii's Wi-Fi drops plain wiiload uploads of this size.
 | `docker/` | build image |
 | `hbc/` | Homebrew Channel icon and `meta.xml` |
 | `tools/` | SD installer, wiiload relay, log listener |
-| `docs/meshtastic-2.8.1-notes.md` | firmware behaviour notes and everything learned porting it |
+| `docs/` | `meshtastic-2.8.1-notes.md` (firmware behaviour notes and everything learned porting it), the logo |
 
 ## Licence
 
