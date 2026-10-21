@@ -17,6 +17,7 @@
 #include "PortduinoFS.h"
 #include "PortduinoGlue.h"
 #include "RadioInterface.h"
+#include "TransmitHistory.h"
 #include <SHA256.h>
 #include <cerrno>
 #include <reent.h>
@@ -142,18 +143,23 @@ void randomSeed(unsigned long seed)
 }
 // No in-process restart: return to the Homebrew Channel. Power::reboot() has
 // already let modules persist their state.
-// Quitting with Home/Reset skips the firmware's reboot path, which is where
-// positions, telemetry and last-heard of the NodeDB get written. Do the same.
+// Every way out of the app (Home, Reset, power, a firmware reboot) skips the
+// firmware's shutdown path (doDeepSleep), which saves the NodeDB - positions,
+// telemetry, last heard, the warm store - and the transmit history. Do the
+// same. Power::reboot() itself saves neither.
 extern "C" void wii_save_state(void)
 {
     if (nodeDB)
-        nodeDB->saveToDisk(); // config, module config, device state, channels, NodeDB
+        nodeDB->saveToDisk(); // config, module config, device state, channels, NodeDB + warm store
+    if (transmitHistory)
+        transmitHistory->saveToDisk(); // broadcast throttle times, so a restart doesn't re-announce early
 }
 
 extern "C" void wii_debuglog_stop();
 void reboot()
 {
     printf("reboot requested: returning to the loader\n");
+    wii_save_state();
     wii_debuglog_stop(); // leave Wi-Fi down so HBC can bring it up again
     exit(0);
 }

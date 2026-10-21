@@ -57,6 +57,10 @@ env.Append(
 # libogc must come after everything that uses it.
 env.Append(LIBS=["fat", "wiiuse", "bte", "ogc", "m"])
 
+# The Crypto library refuses SHA-3 (KeccakCore) on big-endian CPUs, and
+# nothing in this build uses it (only the ESP32 web server does): skip it.
+env.AddBuildMiddleware(lambda node: None, "*KeccakCore.cpp")
+
 target_elf = env.BuildProgram()
 target_dol = env.Command(
     os.path.join("$BUILD_DIR", "meshtasticd.dol"),

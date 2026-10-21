@@ -83,16 +83,29 @@ extern "C" void __wrap_exit(int code)
     __real_exit(code);
 }
 
-// Home on the Wiimote or the console's Reset button quits. A small thread
-// watches for them, so quitting also works while setup() (key generation,
-// radio init) is still running: the main loop gets 3 s to stop on its own
-// before the thread exits for it.
-static volatile bool g_quit;
+// Home on the Wiimote or the console's Reset button quits; the console's or a
+// Wiimote's power button saves and then powers off. A small thread watches
+// for them, so quitting also works while setup() (key generation, radio
+// init) is still running: the main loop gets 3 s to stop on its own before
+// the thread exits for it.
+static volatile bool g_quit, g_poweroff;
 // Main-loop progress for the watchdog: a counter and the stage it is in.
 static volatile unsigned g_frames;
 static const char *volatile g_stage = "setup";
 extern "C" const char *volatile wii_usb_stage;
 static void reset_pressed(u32, void *) { g_quit = true; }
+static void power_pressed(void) { g_poweroff = g_quit = true; }
+static void wpad_power_pressed(s32) { g_poweroff = g_quit = true; }
+
+// The end of every quit: back to the loader, or off for a power button.
+static void leave(void)
+{
+    if (g_poweroff) {
+        fatUnmount("sd:"); // write libfat's cached FAT/dir sectors before the power goes
+        SYS_ResetSystem(SYS_POWEROFF, 0, 0);
+    }
+    exit(0);
+}
 extern "C" void wii_request_quit(void) { g_quit = true; }
 
 static void *quit_watch(void *)
@@ -120,7 +133,7 @@ static void *quit_watch(void *)
         // Stuck after a quit request: exit for it, but give a save in
         // progress (prefs + NodeDB on SD) time to finish first.
         if (g_quit && (waited += 100) >= (strcmp(g_stage, "saving") == 0 ? 15000 : 3000))
-            exit(0);
+            leave();
         usleep(100 * 1000);
     }
     return NULL;
@@ -164,6 +177,8 @@ int main(int argc, char **argv)
         }
     }
     SYS_SetResetCallback(reset_pressed);
+    SYS_SetPowerCallback(power_pressed);
+    WPAD_SetPowerButtonCallback(wpad_power_pressed);
     static lwp_t watcher;
     LWP_CreateThread(&watcher, quit_watch, NULL, NULL, 16 * 1024, 80);
     wii_debuglog_start(); // no-op unless built with WII_DEBUG_HOST
@@ -181,7 +196,7 @@ int main(int argc, char **argv)
         wii_config_tick();
     }
     g_stage = "saving";
-    wii_save_state(); // what the firmware's reboot path would have saved
+    wii_save_state(); // what the firmware's shutdown path would have saved
     wii_debuglog_stop();
-    exit(0);
+    leave();
 }

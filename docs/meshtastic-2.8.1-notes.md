@@ -473,3 +473,54 @@ and the Wiimote IR pointer is the touchscreen.
 - **Region**: a fresh node leaves the region unset, as stock firmware does.
   MUI sees `RegionCode_UNSET` and opens its setup screen; `region=` in
   config.txt also works.
+
+## Crypto, positions and persistence
+
+- **The Crypto library assumes a little-endian CPU** unless `HOST_BUILD` is
+  defined (`utility/EndianUtil.h`). Without it, on the Wii:
+  - SHA-256 and SHA-512 were wrong;
+  - the Curve25519 public key came out byte-swapped per 32-bit word, so it
+    didn't match the private key;
+  - PKI DH secrets disagreed with every other node, so encrypted DMs failed;
+  - XEdDSA signatures failed (the Wii even dropped its own).
+
+  AES-CTR (channel traffic) never depended on it, which is why the mesh
+  looked fine. The fix is `-DHOST_BUILD` plus `stubs/endian.h` (newlib has
+  none), with `KeccakCore.cpp` skipped (it refuses big-endian; only the
+  ESP32 web server uses SHA-3).
+
+  Proven before touching the Wii: the library built for powerpc-linux and
+  run under qemu-ppc gave different results from x86, and identical ones
+  with the fix.
+- **In 2.8 the node number is `crc32(public key)`.** Fixing the key moved
+  the Wii from `!0414929c` to `!56e7c4c0` once, on first boot (the stored
+  private key is kept, the public key re-derived). `createNewIdentity()`
+  moves the self record and drops the old one.
+- **`MESHTASTIC_EXCLUDE_GPS` also removes PositionModule.** The wasm-derived
+  env had it, so other nodes' positions were never stored and the fixed
+  position was never broadcast. The env now keeps the position features
+  without GPS hardware: `HAS_GPS` stays 0, `gps/GPS.cpp` is left out, and
+  `gps_stub.cpp` reports "no GPS fitted" (`createGps()` returns null).
+- **Position sharing also needs a channel with `position_precision` > 0**
+  (13 is about 1.5 km). With 0 on every channel, the module logs `position
+  sharing disabled on all channels`.
+- **Every exit saves.** Home, Reset, the console or Wiimote power button,
+  and firmware reboots all run `wii_save_state()`: `nodeDB->saveToDisk()`
+  (config, module, device, channels, nodes incl. positions/telemetry/warm
+  store) plus `transmitHistory->saveToDisk()`, which is what `doDeepSleep()`
+  does. `Power::reboot()` saves neither on its own. The power button then
+  unmounts the SD card and powers off. MUI writes each message to
+  `/messages` as it happens.
+- **Verified on hardware:**
+  - quit/relaunch and a power-button cycle kept every field of every node
+    that has a key;
+  - positions (9) and telemetry (21) reloaded;
+  - transmit history saved 2 and loaded 2;
+  - channels, settings, MUI settings and messages came back.
+
+  The nodes that disappear at boot are ones that never sent a NodeInfo
+  (`cleanupMeshDB`, stock behaviour). Note that `meshtastic --info` shows
+  other nodes without positions and telemetry: 2.8 sends those as replayed
+  packets after config complete, so use the boot log's `Loaded saved
+  nodedatabase ... N pos, N tel` to check them.
+
