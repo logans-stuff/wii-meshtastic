@@ -455,9 +455,14 @@ and the Wiimote IR pointer is the touchscreen.
   to it. Saving a MUI settings screen afterwards writes the old values
   back. Seen when a channel key set over TCP reverted after MUI's channel
   screen saved. Restart the app after changing settings from elsewhere.
-- **Each API client's config download stalls the main loop ~2 s** (seen by
-  the watchdog in every build): the whole NodeDB/config dump goes out
-  inside one `loop()`. Not fixed yet.
+- **The ~2 s main-loop stall on every API connect was the file manifest**,
+  not the dump. The dump is already sliced (`STREAM_WRITE_BUDGET_MSEC` =
+  100 ms per pass). `PhoneAPI` walks the filesystem for the apps' file
+  browser/OTA screens, and on the Wii that is the SD card with MUI's tile
+  folders, which libfat lists slowly (~2.3 s). The firmware's own
+  `MESHTASTIC_EXCLUDE_FILES_MANIFEST` (set in the Wii env) skips it. A
+  config download now takes 0.1-0.3 s with no watchdog stall, and MUI's
+  boot-time connect got faster the same way.
 - **Wi-Fi in one place**: `wii_net.cpp` brings the network up once, for the
   API and the debug log, and `wii_debuglog_stop()` (called on every exit)
   shuts it down so HBC can reconnect.
