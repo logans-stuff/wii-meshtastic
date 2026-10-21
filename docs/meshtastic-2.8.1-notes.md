@@ -446,6 +446,15 @@ and the Wiimote IR pointer is the touchscreen.
     the app hasn't read yet. Reading one byte per IOS call lost the
     `set_channel` every time; one 256-byte recv takes it all before the RST.
     EOF now really counts as disconnected (upstream cleared it).
+- **The race isn't fully closed.** The CLI writes and closes in the same
+  moment, and if the Wii hasn't read yet when the RST lands, IOS drops the
+  data. A debug build won the race, the release build lost it. The CLI's
+  `--wait-to-disconnect 5` avoids it. Apps that stay connected never hit it.
+- **MUI keeps its own copy of the settings.** It loads them at boot, and
+  the firmware doesn't push changes made by another client (CLI or phone)
+  to it. Saving a MUI settings screen afterwards writes the old values
+  back. Seen when a channel key set over TCP reverted after MUI's channel
+  screen saved. Restart the app after changing settings from elsewhere.
 - **Each API client's config download stalls the main loop ~2 s** (seen by
   the watchdog in every build): the whole NodeDB/config dump goes out
   inside one `loop()`. Not fixed yet.

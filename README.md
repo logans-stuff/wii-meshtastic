@@ -65,7 +65,12 @@ set), or put it in `config.txt` (below).
 | **Home** | save and quit to HBC |
 
 **Phone and desktop apps** connect over Wi-Fi: add a network (TCP) device with
-the Wii's IP (port 4403), or `meshtastic --host <wii-ip> --info`.
+the Wii's IP (port 4403), or `meshtastic --host <wii-ip> --info`. When the CLI
+*changes* settings, add `--wait-to-disconnect 5`. Otherwise it closes the
+connection the moment it has written, and the Wii can lose the change (see
+the notes). MUI loads settings when it starts and doesn't see changes made
+from another client, so restart the app before editing the same settings in
+MUI, or MUI writes back its old copy.
 
 **Settings** can come from `sd:/apps/meshtasticd/config.txt`. See
 `config.example.txt` for every key. It is applied once per change, as the same
