@@ -110,7 +110,7 @@ static int send_pins(void)
 }
 
 // Open the first matching device, retrying ~5 s while the CH341 enumerates
-// (the same loop as apps/meshtoad's ch341_open).
+// (enumeration can lag the app start by a few seconds).
 static int open_device(uint16_t vid, uint16_t pid)
 {
     static usb_device_entry list[16];

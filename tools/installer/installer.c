@@ -1,6 +1,6 @@
-/* One-shot installer: writes an HBC app (and, for Meshtoad, offline map
- * tiles) to sd:/apps/<INSTALL_APP>/. Send it once with wiiload; it does the
- * rest. Also built for meshtasticd by tools/meshtasticd-installer. */
+/* One-shot installer: writes the HBC app files (boot.dol, meta.xml,
+ * icon.png) to sd:/apps/meshtasticd/. Send it once with wiiload (install.sh
+ * does); it does the rest. */
 #include <stdio.h>
 #include <string.h>
 
@@ -9,14 +9,10 @@
 #include <sys/stat.h>
 #include <wiiuse/wpad.h>
 
-#ifndef INSTALL_APP
-#define INSTALL_APP "meshtoad"
-#define INSTALL_TITLE "Meshtoad"
-#endif
-#ifndef INSTALL_DATA
-#define INSTALL_DATA "install_data.h"
-#endif
-#include INSTALL_DATA
+#include "install_data.h"
+
+#define INSTALL_APP "meshtasticd"
+#define INSTALL_TITLE "Meshtastic"
 
 static void *xfb;
 
@@ -54,7 +50,7 @@ int main(void)
         FILE *f;
         size_t n = 0;
         snprintf(path, sizeof(path), "sd:/apps/" INSTALL_APP "/%s", INSTALL_FILES[i].name);
-        /* Create every parent directory of this file (e.g. tiles/13/1490). */
+        /* Create every parent directory of this file. */
         snprintf(dir, sizeof(dir), "%s", path);
         slash = strrchr(dir, '/');
         if (slash != NULL) {

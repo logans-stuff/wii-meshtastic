@@ -1,7 +1,7 @@
 // Optional bring-up aid: copy everything written to stdout (the firmware log)
 // to a TCP listener on the build host, keeping the on-screen console too.
 // Compiled in only when the build defines WII_DEBUG_HOST (build.sh:
-// WII_DEBUG_HOST=<pc-ip> apps/meshtasticd/build.sh). Wi-Fi comes from
+// WII_DEBUG_HOST=<pc-ip> ./build.sh). Wi-Fi comes from
 // wii_net.cpp; wii_debuglog_stop() (run on every exit) shuts it down.
 #ifdef WII_DEBUG_HOST
 #include <cerrno>

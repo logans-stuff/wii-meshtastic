@@ -84,45 +84,6 @@ void wasm_config_apply()
 
 extern "C" volatile bool g_wasm_in_firmware = false;
 
-extern "C" int wii_set_region(int region);
-
-// A fresh node has no region and keeps TX off until one is set: default to US
-// (the MeshToad's band). The API can change it later.
-extern "C" void wii_default_region()
-{
-    if (config.lora.region == meshtastic_Config_LoRaConfig_RegionCode_UNSET)
-        wii_set_region(meshtastic_Config_LoRaConfig_RegionCode_US);
-}
-
-// Set the LoRa region the way AdminModule's set_config does (validate, mint
-// the PKI identity on first region, initRegion, reloadConfig). 0 = ok.
-extern "C" int wii_set_region(int region)
-{
-    auto newRegion = (meshtastic_Config_LoRaConfig_RegionCode)region;
-    if (config.lora.region == newRegion)
-        return 0;
-    meshtastic_Config_LoRaConfig validated = config.lora;
-    validated.region = newRegion;
-    if (!(RadioInterface::validateConfigRegion(validated) && RadioInterface::validateConfigLora(validated)))
-        return -1;
-    int changes = SEGMENT_CONFIG;
-    bool wasUnset = (config.lora.region == meshtastic_Config_LoRaConfig_RegionCode_UNSET);
-    if (wasUnset && newRegion > meshtastic_Config_LoRaConfig_RegionCode_UNSET) {
-#if !(MESHTASTIC_EXCLUDE_PKI_KEYGEN || MESHTASTIC_EXCLUDE_PKI)
-        if (nodeDB && nodeDB->ensurePkiIdentity())
-            changes |= SEGMENT_DEVICESTATE | SEGMENT_NODEDATABASE;
-#endif
-        validated.tx_enabled = true;
-    }
-    if (!wasUnset && newRegion == meshtastic_Config_LoRaConfig_RegionCode_UNSET)
-        validated.tx_enabled = false;
-    config.lora = validated;
-    initRegion();
-    if (service)
-        service->reloadConfig(changes);
-    return 0;
-}
-
 // In-process client API: the UI (or a TCP bridge) feeds ToRadio protobufs in and
 // drains FromRadio out, unframed, exactly like the wasm_api_* seam.
 class WiiPhoneAPI : public PhoneAPI

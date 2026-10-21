@@ -1,5 +1,5 @@
-/* ALTERED for Sonoran for Wii: copy of libogc v3.1.0 libogc/usb.c with
- * USBV5_SetAlternateSetting() added at the end (it needs ven_host->fd).
+/* ALTERED: copy of libogc v3.1.0 libogc/usb.c with USBV5_SetAlternateSetting()
+ * added at the end (it needs ven_host->fd).
  * The original notice follows. */
 /*-------------------------------------------------------------
 
@@ -1520,7 +1520,7 @@ s32 USB_ClearHalt(s32 fd, u8 endpoint)
 #endif /* defined(HW_RVL) */
 
 
-/* Sonoran for Wii addition: set the alternate setting of a USBV5 device
+/* Addition: set the alternate setting of a USBV5 device
  * through IOS (USBV5 IOCTL 7). IOS must know the setting before it
  * accepts isochronous transfers on the endpoints of that setting.
  * In buffer: device id at byte 0, alternate setting at byte 8. */

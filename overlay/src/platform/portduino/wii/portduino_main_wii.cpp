@@ -16,7 +16,6 @@ extern "C" void setup();
 extern "C" void loop();
 extern void portduinoSetup();
 extern void wasm_fs_mount();
-extern "C" void wii_default_region();
 extern "C" void wii_debuglog_start();
 extern "C" void wii_debuglog_stop();
 extern "C" void wii_config_load();
@@ -127,10 +126,11 @@ static void *quit_watch(void *)
     return NULL;
 }
 
-// key=value loader arguments (send.sh <ip> preset=MEDIUM_FAST slot=18 ...)
+// key=value loader arguments (./send.sh <ip> region=EU_868 preset=LONG_FAST)
 // replace config.txt. The Homebrew Channel passes wiiload's arguments from
-// argv[0] on (no program name first), so every argv entry is considered. Only the keys in it are (re)applied, everything else
-// stays as the firmware saved it, so this is how settings change remotely.
+// argv[0] on (no program name first), so every argv entry is considered.
+// Only the keys in it are (re)applied, everything else stays as the firmware
+// saved it, so this is how settings change remotely.
 static void seed_config(int argc, char **argv)
 {
     bool any = false;
@@ -170,8 +170,7 @@ int main(int argc, char **argv)
     wasm_fs_mount();
     seed_config(argc, argv);
     portduinoSetup();
-    setup();
-    wii_default_region();
+    setup(); // a fresh node keeps the region unset (no TX) until config.txt or MUI sets it
     wii_config_load(); // sd:/apps/meshtasticd/config.txt, via AdminMessages
     while (!g_quit) {
         g_frames++;

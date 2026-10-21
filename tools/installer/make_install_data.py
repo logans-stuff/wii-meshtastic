@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the files embedded by the one-shot Meshtoad SD installer."""
+"""Generate install_data.h: the HBC app files the one-shot SD installer embeds."""
 
 import argparse
 from pathlib import Path
@@ -14,24 +14,10 @@ def bytes_literal(data: bytes) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--app-dir", type=Path, required=True)
-    parser.add_argument("--tiles-dir", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--tiles-only", action="store_true")
-    parser.add_argument("--tile-zoom", type=int)
     args = parser.parse_args()
 
-    app_names = ("boot.dol", "meta.xml", "icon.png")
-    files = [] if args.tiles_only else [(name, args.app_dir / name) for name in app_names]
-    if args.tiles_dir.is_dir():
-        tile_root = args.tiles_dir / str(args.tile_zoom) if args.tile_zoom is not None else args.tiles_dir
-        files.extend(
-            (f"tiles/{path.relative_to(args.tiles_dir).as_posix()}", path)
-            for path in sorted(tile_root.rglob("*.png"))
-        )
-
-    if not files:
-        parser.error("no files selected")
-
+    files = [(name, args.app_dir / name) for name in ("boot.dol", "meta.xml", "icon.png")]
     missing = [str(path) for _, path in files if not path.is_file()]
     if missing:
         parser.error("missing input file(s): " + ", ".join(missing))

@@ -1,0 +1,65 @@
+# Copy to sd:/apps/meshtasticd/config.txt and keep only the lines you need.
+# Every line is optional: anything left out keeps the firmware's saved value
+# (or its default on a fresh node). The file is applied once per change, as
+# the same admin messages the Meshtastic apps send, so the firmware's own
+# validation and limits apply. You can also change all of this later from
+# MUI on the TV or from a phone app over TCP.
+# Values are case-insensitive; '#' starts a comment.
+
+# --- Identity ---------------------------------------------------------------
+#name=My Wii Node
+#short=WII
+
+# --- LoRa -------------------------------------------------------------------
+# region: required before the node transmits. A fresh node leaves it unset
+# and MUI asks for it on first boot. Use your country's band, e.g.
+# US, EU_868, EU_433, ANZ, CN, JP, KR, TW, RU, IN, NZ_865, TH, UA_868, MY_919,
+# SG_923, PH_915, BR_902, LORA_24 (the full firmware list is accepted).
+#region=EU_868
+
+# preset: LONG_FAST (the default mesh), LONG_SLOW, LONG_MODERATE, LONG_TURBO,
+# MEDIUM_FAST, MEDIUM_SLOW, MEDIUM_TURBO, SHORT_FAST, SHORT_SLOW, SHORT_TURBO,
+# VERY_LONG_SLOW. Must match your local mesh.
+#preset=LONG_FAST
+
+# slot: frequency slot within the region (0 = derived from the channel
+# name, as the firmware does by default). Match your local mesh.
+#slot=0
+#hop_limit=3
+#tx_power=0                 # dBm, 0 = the region's maximum
+#override_duty_cycle=off
+#ignore_mqtt=off
+#ok_to_mqtt=off
+
+# --- Device -----------------------------------------------------------------
+# role: CLIENT, CLIENT_MUTE, CLIENT_HIDDEN, CLIENT_BASE, ROUTER, ROUTER_LATE,
+# TRACKER, SENSOR, TAK, TAK_TRACKER, LOST_AND_FOUND
+#role=CLIENT
+# rebroadcast: ALL, ALL_SKIP_DECODING, LOCAL_ONLY, KNOWN_ONLY, NONE,
+# CORE_PORTNUMS_ONLY
+#rebroadcast=ALL
+#node_info_interval=10800   # seconds
+
+# --- Position (the Wii has no GPS: set a fixed position or leave it off) ----
+#fixed_lat=0.0
+#fixed_lon=0.0
+#fixed_alt=0                # metres
+#position_interval=900      # seconds
+#position_precision=13      # bits shared on the primary channel (32 = exact)
+#position_dedup=0           # traffic management: min seconds between positions
+
+# --- Modules ----------------------------------------------------------------
+#telemetry=on
+#telemetry_interval=1800    # seconds
+#neighbor_info=off
+#neighbor_interval=14400    # seconds
+#neighbor_lora=off
+
+# --- Primary channel --------------------------------------------------------
+#channel_name=
+#psk=AQ==                   # base64; AQ== is the default public key
+
+# --- Wii --------------------------------------------------------------------
+# tcp_api: the phone/desktop API on TCP port 4403 over the Wii's Wi-Fi.
+# off keeps Wi-Fi off entirely.
+#tcp_api=on

@@ -1,24 +1,30 @@
-# One-shot meshtasticd SD installer -> build/meshtasticd-installer.dol
-# Writes boot.dol, meta.xml and icon.png to sd:/apps/meshtasticd/ (config.txt,
-# prefs/ and maps/ there are left alone). Reuses the Meshtoad installer's
-# source. Stage dist/apps/meshtasticd/boot.dol first: apps/meshtasticd/install.sh
-# does all of it.
-.DEFAULT_GOAL := all
-ROOT := ../..
-APP  := meshtasticd-installer
-APP_SRC  := source/installer.c
-APP_LIBS := -lfat -lwiiuse -lbte -logc -lm
-APP_CFLAGS := -DINSTALL_APP='"meshtasticd"' -DINSTALL_TITLE='"Meshtastic"' \
-  -DINSTALL_DATA='"$(CURDIR)/build/install_data.h"'
+# One-shot SD installer -> build/meshtasticd-installer.dol (install.sh builds
+# it in the devkitPPC container). Embeds ../../hbc/{boot.dol,meta.xml,icon.png}
+# and writes them to sd:/apps/meshtasticd/; config.txt, prefs/ and maps/ there
+# are left alone.
+include $(DEVKITPPC)/base_tools
 
-INSTALL_APP_FILES := $(sort $(wildcard $(ROOT)/dist/apps/meshtasticd/*))
+MACHDEP := -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float
+CFLAGS  := -O2 -Wall $(MACHDEP) -I$(DEVKITPRO)/libogc/include -Ibuild
+LDFLAGS := $(MACHDEP) -L$(DEVKITPRO)/libogc/lib/wii
+HBC     := ../../hbc
 
-build/install_data.h: $(ROOT)/tools/meshtoad-installer/make_install_data.py $(INSTALL_APP_FILES)
+all: build/meshtasticd-installer.dol
+
+build/install_data.h: make_install_data.py $(wildcard $(HBC)/*)
 	@mkdir -p build
-	python3 $< --app-dir $(ROOT)/dist/apps/meshtasticd --tiles-dir /nonexistent --output $@
+	python3 $< --app-dir $(HBC) --output $@
 
-build/installer.o: $(ROOT)/tools/meshtoad-installer/source/installer.c build/install_data.h
-	@mkdir -p build
+build/installer.o: installer.c build/install_data.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-include $(ROOT)/common.mk
+build/meshtasticd-installer.elf: build/installer.o
+	$(CC) $(LDFLAGS) -o $@ $< -lfat -lwiiuse -lbte -logc -lm
+
+build/meshtasticd-installer.dol: build/meshtasticd-installer.elf
+	elf2dol $< $@
+
+clean:
+	rm -rf build
+
+.PHONY: all clean

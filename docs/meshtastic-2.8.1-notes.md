@@ -1,7 +1,10 @@
 # Meshtastic firmware 2.8.1: what a node does, and how to run it on a Wii
 
-Notes from reading the firmware source while bringing Meshtoad (the Wii
-LoRa client in `apps/meshtoad`) up to firmware behaviour. Everything here was
+Notes from reading the firmware source while bringing Meshtoad (a hand-written
+Wii LoRa client, `apps/meshtoad` in
+[wii-apps-for-2026](https://github.com/logans-stuff/wii-apps-for-2026); the
+`apps/meshtoad/...` paths below are in that repo) up to firmware behaviour, and
+then while porting the firmware itself (this repo). Everything here was
 read out of **meshtastic/firmware tag `v2.8.1.8e6a88d`** (protobufs submodule
 `8f97d66`). Paths are relative to that tree's `src/` unless noted. Re-check them
 when moving to a newer release; 2.8 changed a lot of defaults.
@@ -35,7 +38,7 @@ Two parts:
   zero bytes (`mesh/CryptoEngine.cpp`).
 - **Channel hash** = `xorHash(name) ^ xorHash(psk)` (`mesh/Channels.cpp:27-56`). An
   empty channel name hashes as the preset's display name. Check: `"MediumFast"`
-  with the default key gives `0x1f`, the hash our mesh uses. AEAD channels (new in
+  with the default key gives `0x1f`. AEAD channels (new in
   2.8) additionally xor `0xAE`.
 - **`Data.bitfield` (field 9) is always sent by firmware >= 2.5**: bit 0 =
   `ok_to_mqtt`, bit 1 = `want_response` (`mesh/Router.h:314`,
@@ -152,8 +155,8 @@ extra node. Routers, trackers and sensors are exempt.
 
 **Default frequency slot** = `djb2(channel or preset display name) % numSlots +
 1`. US with a 250 kHz bandwidth has 104 slots. MediumFast's default is **45** and
-LongFast's is **20**, so our mesh's slot 18 is *non-default*. That matters for
-the NeighborInfo-over-LoRa rule.
+LongFast's is **20**. A mesh that picked another slot is *non-default*, which
+matters for the NeighborInfo-over-LoRa rule.
 
 ### Traffic management (on by default, new in 2.8)
 
@@ -276,7 +279,7 @@ far:
   GPL-3.0. The Wii port app has to be GPL-3.0 even though the rest of this
   repo is Unlicense.
 
-### Build status and what the first build taught us (`apps/meshtasticd`)
+### Build status and what the first build taught us
 
 **The firmware builds and links for the Wii** (`meshtasticd.dol`, ~1.9 MB), as
 `[env:native-wii]` on a PlatformIO `platform-wii` (platform-wasm with
@@ -349,7 +352,7 @@ flooding (hop limit 2->1, SNR-weighted delay).
 
 MUI, the firmware's own LVGL UI (`meshtastic/device-ui`, pinned by 2.8.1's
 `[device-ui_base]`), runs in-process. Its 320x240 layout is drawn 2x into
-the TV's YUYV framebuffer by `WiiDriver` (`apps/meshtasticd/overlay-device-ui`),
+the TV's YUYV framebuffer by `WiiDriver` (`overlay-device-ui`),
 and the Wiimote IR pointer is the touchscreen.
 
 - **LVGL needs `LV_BIG_ENDIAN_SYSTEM 1`.** device-ui's `lv_conf.h` hardcodes
@@ -375,7 +378,7 @@ and the Wiimote IR pointer is the touchscreen.
   <stage> (usb <bulk IN|OUT|idle>)` when the loop stalls. That's how the
   deadlock above was found on the first try.
 - **Sending**: the MUI build is ~3.6 MB, too big for plain wiiload on the
-  Wii's Wi-Fi. `apps/meshtasticd/send.sh <wii-ip>` goes through
+  Wii's Wi-Fi. `./send.sh <wii-ip>` goes through
   `tools/wiiload_relay.py` (536-byte segments).
 
 ## Offline maps on the Wii (MUI)
@@ -383,11 +386,10 @@ and the Wiimote IR pointer is the touchscreen.
 - **Where MUI looks**: MUI's `/` is `sd:/apps/meshtasticd`, so styles live in
   `sd:/apps/meshtasticd/maps/<style>/`. That folder holds either `z/x/y.png`
   tiles or one `<style>.pmtiles` file. Long-press Map to choose a style.
-- **Use a whole-state PMTiles bundle, not a hand-picked tile set.** Arizona
-  came from
-  `bundle.tiles.coalition.space/bundles/arizona/arizona-osm-bright-z0-z15-20261003.pmtiles`:
-  1.29 GB, PNG, z0-15, ~405k tiles, and it fits a 4 GB card. A small z8-14
-  set built around a guessed centre missed the node's real position.
+- **Use a region-sized raster PMTiles bundle, not a hand-picked tile set.**
+  MUI needs PNG (raster) tiles; vector PMTiles don't render. A US-state
+  bundle at z0-15 was ~1.3 GB (~400k PNG tiles) and fit a 4 GB card. A small
+  z8-14 set built around a guessed centre missed the node's real position.
 - **Two more big-endian bugs**, both reading little-endian file integers
   with `memcpy`:
   - pmtiles.hpp `copy_from_lsb` (header and directory varints);
@@ -427,8 +429,10 @@ and the Wiimote IR pointer is the touchscreen.
 - **Wi-Fi in one place**: `wii_net.cpp` brings the network up once, for the
   API and the debug log, and `wii_debuglog_stop()` (called on every exit)
   shuts it down so HBC can reconnect.
-- **SD install**: `apps/meshtasticd/install.sh <wii-ip>` builds the release
-  firmware (no debug log stream, checked), stages
-  `dist/apps/meshtasticd/{boot.dol,meta.xml,icon.png}`, and sends
-  `tools/meshtasticd-installer` (the Meshtoad installer, with the app name
-  as a parameter). It never touches config.txt, prefs/ or maps/.
+- **SD install**: `./install.sh <wii-ip>` builds the release firmware (no
+  debug log stream, checked), stages `hbc/{boot.dol,meta.xml,icon.png}`, and
+  sends `tools/installer` (a one-shot SD writer). It never touches
+  config.txt, prefs/ or maps/.
+- **Region**: a fresh node leaves the region unset, as stock firmware does.
+  MUI sees `RegionCode_UNSET` and opens its setup screen; `region=` in
+  config.txt also works.

@@ -1,6 +1,6 @@
 // POSIX-socket names for the portduino WiFi library on the Wii: thin wrappers
 // over libogc's net_* calls (Wii build only; this copy of the library lives in
-// apps/meshtasticd/overlay/lib/WiFi and shadows framework-portduino's).
+// overlay/lib/WiFi and shadows framework-portduino's).
 //  - libogc returns -errno instead of setting errno: translate.
 //  - libogc may hand out socket 0, which this library treats as "no socket":
 //    every descriptor seen by the library is the libogc one plus 1.
