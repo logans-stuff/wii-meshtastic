@@ -128,4 +128,5 @@ segments, because the Wii's Wi-Fi drops plain wiiload uploads of this size.
 
 GPL-3.0 (the firmware's licence; see `LICENSE`). `libogc-usb/ogc_usb.c` keeps
 libogc's zlib-style licence, `overlay/lib/WiFi` is LGPL-2.1 (from
-framework-portduino), and `platform-wii/` keeps its own `LICENSE`.
+framework-portduino), and `platform-wii/` keeps its own `LICENSE`. wolfSSL (GPL-3.0),
+used for MQTT over TLS, is downloaded and built by `build.sh`, not vendored.
