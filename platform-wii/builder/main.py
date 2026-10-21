@@ -49,8 +49,11 @@ env.Replace(
 
 MACHDEP = ["-DGEKKO", "-mrvl", "-mcpu=750", "-meabi", "-mhard-float"]
 env.Append(
-    CCFLAGS=MACHDEP + ["-O2", "-ffunction-sections", "-fdata-sections"],
-    CPPPATH=[os.path.join(OGC, "include"), os.path.join(PORTLIBS, "include")],
+    # libogc/portlibs as system headers: searched after the project's -I
+    # dirs, so the variant's stubs/ can wrap one (e.g. netinet/in.h)
+    CCFLAGS=MACHDEP + ["-O2", "-ffunction-sections", "-fdata-sections",
+                       "-isystem", os.path.join(OGC, "include"),
+                       "-isystem", os.path.join(PORTLIBS, "include")],
     LINKFLAGS=MACHDEP + ["-Wl,--gc-sections"],
     LIBPATH=[os.path.join(OGC, "lib", "wii"), os.path.join(PORTLIBS, "lib")],
 )

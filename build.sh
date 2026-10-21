@@ -59,6 +59,23 @@ docker run --rm --user "$(id -u):$(id -g)" -v "$ROOT":/w -w /w devkitpro/devkitp
     -Ithird_party/libogc/gc -Ithird_party/libogc/libogc -Ithird_party/libogc/gc/ogc \
     -Ithird_party/libogc/gc/ogc/machine -c -o build/ogc_usb.o libogc-usb/ogc_usb.c
 
+# wolfSSL for MQTT over TLS (WiFiClientSecure), configured by tls/user_settings.h.
+# Rebuilt only when the config (or this list) changes.
+WOLFSSL=third_party/wolfssl
+WOLFSSL_REF=v5.9.4-stable
+WOLFSSL_SRC="$(for f in internal keys ssl tls tls13 wolfio; do printf '%s ' "$WOLFSSL/src/$f.c"; done)$(for f in aes asn coding chacha chacha20_poly1305 curve25519 ecc error fe_operations hash hmac kdf logging memory poly1305 random rsa sha sha256 sha512 signature sp_int sp_c32 wc_encrypt wc_port wolfmath md5; do printf '%s ' "$WOLFSSL/wolfcrypt/src/$f.c"; done)"
+[ -d "$WOLFSSL/.git" ] || $GIT clone -q --depth 1 --branch "$WOLFSSL_REF" https://github.com/wolfSSL/wolfssl "$WOLFSSL"
+if [ ! -f build/libwolfssl.a ] || [ tls/user_settings.h -nt build/libwolfssl.a ] || [ build.sh -nt build/libwolfssl.a ]; then
+    docker run --rm --user "$(id -u):$(id -g)" -v "$ROOT":/w -w /w devkitpro/devkitppc:20260503 sh -c '
+        set -e; rm -rf build/wolfssl; mkdir -p build/wolfssl
+        for f in '"$WOLFSSL_SRC"'; do
+            /opt/devkitpro/devkitPPC/bin/powerpc-eabi-gcc -O2 -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float \
+                -DWOLFSSL_USER_SETTINGS -Itls -I'"$WOLFSSL"' -c -o build/wolfssl/$(basename $f .c).o $f
+        done
+        rm -f build/libwolfssl.a
+        /opt/devkitpro/devkitPPC/bin/powerpc-eabi-ar rcs build/libwolfssl.a build/wolfssl/*.o'
+fi
+
 docker volume create meshtasticd-wii-pio >/dev/null
 EXTRA_FLAGS="$WII_EXTRA_FLAGS" # e.g. "-DRADIOLIB_DEBUG_BASIC=1 -DRADIOLIB_DEBUG_SPI=1"
 [ -n "$WII_DEBUG_HOST" ] && EXTRA_FLAGS="$EXTRA_FLAGS -DWII_DEBUG_HOST=\\\"$WII_DEBUG_HOST\\\""

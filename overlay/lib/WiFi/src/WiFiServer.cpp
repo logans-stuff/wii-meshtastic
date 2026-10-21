@@ -111,7 +111,9 @@ WiFiClient WiFiServer::available(byte *status) {
     }
   }
 
-  return WiFiClient(s);
+  if (s <= 0)
+    return WiFiClient(s);
+  return WiFiClient(s, cli_addr.sin_addr.s_addr, ntohs(cli_addr.sin_port));
 }
 
 uint8_t WiFiServer::status() {

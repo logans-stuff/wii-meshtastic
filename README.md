@@ -72,6 +72,13 @@ the notes). MUI loads settings when it starts and doesn't see changes made
 from another client, so restart the app before editing the same settings in
 MUI, or MUI writes back its old copy.
 
+**MQTT** works over the Wii's Wi-Fi, plain or TLS (TLS 1.2/1.3 via wolfSSL),
+set up the normal way (MUI, an app, or `meshtastic --set mqtt.enabled true
+--set mqtt.address <broker>[:port] --set mqtt.tls_enabled true`), plus uplink
+and/or downlink on the channels you want bridged. As on other boards, the
+broker's certificate is not checked. Changing MQTT settings reboots the
+firmware, which on the Wii means back to HBC: launch it again.
+
 **Settings** can come from `sd:/apps/meshtasticd/config.txt`. See
 `config.example.txt` for every key. It is applied once per change, as the same
 admin messages the apps send.

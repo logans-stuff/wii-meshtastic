@@ -524,3 +524,44 @@ and the Wiimote IR pointer is the touchscreen.
   packets after config complete, so use the boot log's `Loaded saved
   nodedatabase ... N pos, N tel` to check them.
 
+## MQTT and TLS
+
+- **No firmware code change was needed.** MQTT is upstream: removing
+  `MESHTASTIC_EXCLUDE_MQTT` and adding `${networking_base.lib_deps}`
+  (PubSubClient) and `+<mqtt/>` to the env is enough. `MQTT.h` enables
+  TLS by itself when `<WiFiClientSecure.h>` exists, and always calls
+  `setInsecure()`: the session is encrypted, the certificate isn't checked,
+  as on every other platform.
+- **`WiFiClientSecure` for the Wii** (overlay/lib/WiFi) is wolfSSL v5.9.4
+  (the version the Sonoran Wii app already uses) over WiFiClient's libogc
+  socket, with its own I/O callbacks:
+  - poll-gated reads, so no data is wolfSSL's WANT_READ;
+  - blocking sends after a POLLOUT wait;
+  - 8 s handshake and 2 s send limits, so a dead broker fails instead of
+    hanging the single-threaded loop;
+  - SNI for hostnames.
+
+  `build.sh` builds wolfSSL into `build/libwolfssl.a` from
+  `tls/user_settings.h` (TLS 1.2/1.3 client, ECC/X25519/RSA, AES-GCM,
+  ChaCha20-Poly1305, `BIG_ENDIAN_ORDER`, seeded from `_getentropy_r`).
+- **WiFiClient fixes for outgoing connections:**
+  - `connect()` brings Wi-Fi up itself (`tcp_api=0` leaves it down);
+  - it skips DNS for IP literals;
+  - it closes the socket on failure;
+  - it remembers the peer, so `remoteIP()` works: libogc has no
+    `getpeername`, and MQTT uses `remoteIP()` for its private-broker check.
+- **Headers:** `MQTT.cpp` gets `ntohl` from `<netinet/in.h>`, which libogc's
+  copy doesn't define. The variant's `stubs/netinet/in.h` adds
+  `<arpa/inet.h>`. For a stub to win over a header libogc *does* have, the
+  platform now passes libogc/portlibs as `-isystem` (after the project's
+  `-I`).
+- **Verified against a local Mosquitto** (this PC):
+  - plain MQTT connected in ~1 s, and mesh packets arrived as encrypted
+    ServiceEnvelopes on `msh/2/e/<channel>/!<node>`;
+  - TLS: `TLSv1.3 ... TLS_AES_256_GCM_SHA384 in 32 ms`, packets flowing,
+    no watchdog stalls;
+  - `MQTT server on a private IP` was detected.
+- MQTT setting changes reboot the firmware (upstream), so the Wii returns
+  to HBC. The config-time check is a plain TCP connect even for TLS, so a
+  TLS broker logs an early EOF then. That's harmless.
+

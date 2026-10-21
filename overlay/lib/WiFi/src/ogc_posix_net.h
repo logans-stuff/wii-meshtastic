@@ -44,12 +44,6 @@ static inline int wii_close(int s) { return wii_ret(net_close(s - 1)); }
 static inline long wii_write(int s, const void *b, size_t n) { return wii_ret(net_send(s - 1, b, (s32)n, 0)); }
 static inline long wii_read(int s, void *b, size_t n) { return wii_ret(net_recv(s - 1, b, (s32)n, 0)); }
 static inline struct hostent *wii_gethostbyname(const char *h) { return net_gethostbyname(h); }
-// libogc has no getpeername: the peer address is only logged, so report none.
-static inline int wii_getpeername(int, struct sockaddr *, socklen_t *)
-{
-    errno = ENOTSUP;
-    return -1;
-}
 static inline int wii_getsockname(int s, struct sockaddr *a, socklen_t *l) { return wii_ret(net_getsockname(s - 1, a, l)); }
 
 // Zero-timeout poll of one socket; returns IOS revents (BSD values, as in
@@ -62,4 +56,11 @@ static inline unsigned wii_poll(int s, unsigned events)
 {
     struct pollsd sd = {s - 1, events, 0};
     return net_poll(&sd, 1, 0) > 0 ? sd.revents : 0;
+}
+
+// Poll one socket for up to ms milliseconds (TLS handshakes wait for the peer).
+static inline unsigned wii_poll_wait(int s, unsigned events, int ms)
+{
+    struct pollsd sd = {s - 1, events, 0};
+    return net_poll(&sd, 1, ms) > 0 ? sd.revents : 0;
 }

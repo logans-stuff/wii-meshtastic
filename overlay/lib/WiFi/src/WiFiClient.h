@@ -27,7 +27,7 @@
 class WiFiClient : public Client {
 
 public:
-  WiFiClient(int psock = 0);
+  WiFiClient(int psock = 0, uint32_t peerAddr = 0, uint16_t peerPort = 0);
 
   uint8_t status();
   virtual int connect(IPAddress ip, uint16_t port);
@@ -51,8 +51,11 @@ public:
 
   using Print::write;
 
-private:
+protected: // Wii: WiFiClientSecure runs TLS over this socket
   int psock;
+  /// Wii: libogc has no getpeername, so the peer is remembered at connect/accept
+  uint32_t peerAddr = 0; // network byte order
+  uint16_t peerPort = 0;
 
   /// Wii: bytes already taken from the socket. One recv() drains what IOS
   /// holds, so data that arrived before a reset (a client that sends and
